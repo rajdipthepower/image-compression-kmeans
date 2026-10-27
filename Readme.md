@@ -12,6 +12,28 @@ The K-Means algorithm is implemented **from scratch using NumPy** rather than us
 
 ---
 
+## Web Application Showcase (Streamlit)
+
+In addition to the script-based workflow, this project now includes an interactive **Streamlit Web Application** to showcase the compression live! 
+
+### Features of the Web App:
+- **Interactive K-Means Compressor:** Upload any custom image (JPG/PNG) or use the default sample image (`bird.png`), select your preferred cluster size ($K$), and watch the compression happen live.
+- **File Size Comparison & Download:** Instantly see the exact file size reduction percentage and download your compressed image directly to your device.
+- **Exploratory Experiment Dashboard:** Explore pre-computed benchmarks, experiment result tables, and evaluation plots across different cluster sizes.
+- **Night Mode Toggle:** Includes a seamless dark/light theme toggle switch for comfortable viewing.
+
+### Running the Web App Locally:
+1. Navigate to the deployment folder:
+   ```bash
+   cd deployment
+   ```
+2. Run the Streamlit app:
+   ```bash
+   streamlit run app.py
+   ```
+
+---
+
 ## How It Works
 
 The image compression pipeline consists of the following steps:
@@ -47,6 +69,9 @@ image-compression-kmeans/
 │       ├── experiment_results.csv
 │       └── final_images.png
 │
+├── deployment/
+│   └── app.py (Streamlit Web App)
+│
 ├── src/
 │   ├── kmeans.py
 │   ├── image_utils.py
@@ -65,31 +90,34 @@ image-compression-kmeans/
 
 ### File Descriptions
 
-* `src/kmeans.py`
+- `deployment/app.py`
+  The interactive Streamlit web application for live compression and benchmark visualization.
+
+- `src/kmeans.py`
   Contains the K-Means clustering implementation.
 
-* `src/image_utils.py`
+- `src/image_utils.py`
   Handles image loading, reshaping, compression, reconstruction, and image saving.
 
-* `src/metrics.py`
+- `src/metrics.py`
   Contains the evaluation metrics used to measure reconstruction quality and compression.
 
-* `src/visualization.py`
+- `src/visualization.py`
   Generates plots and visual comparisons of the reconstructed images.
 
-* `main.py`
+- `main.py`
   Runs the main image compression workflow.
 
-* `test.py`
+- `test.py`
   Tests the connection between the different project modules and verifies that the workflow runs correctly.
 
-* `notebooks/kmeans.ipynb`
+- `notebooks/kmeans.ipynb`
   Original Jupyter Notebook implementation and experimentation.
 
-* `data/input/`
+- `data/input/`
   Contains the original input image.
 
-* `data/output/`
+- `data/output/`
   Contains reconstructed images, plots, and experiment results.
 
 ---
@@ -128,9 +156,9 @@ Lower inertia indicates that pixels are, on average, closer to their assigned ce
 
 The project uses a theoretical representation-based compression ratio based on:
 
-* the number of pixels,
-* the number of cluster centroids,
-* and the number of bits required to represent each cluster assignment.
+- the number of pixels,
+- the number of cluster centroids,
+- and the number of bits required to represent each cluster assignment.
 
 This is used to study the relationship between the number of colors and the potential storage reduction.
 
@@ -148,12 +176,12 @@ Peak memory allocation during the compression process is also measured.
 
 The experiments generate the following plots:
 
-* **Inertia vs Number of Clusters**
-* **MSE vs Number of Clusters**
-* **PSNR vs Number of Clusters**
-* **Compression Ratio vs Number of Clusters**
-* **Runtime vs Number of Clusters**
-* **Memory Usage vs Number of Clusters**
+- **Inertia vs Number of Clusters**
+- **MSE vs Number of Clusters**
+- **PSNR vs Number of Clusters**
+- **Compression Ratio vs Number of Clusters**
+- **Runtime vs Number of Clusters**
+- **Memory Usage vs Number of Clusters**
 
 Reconstructed images are also generated for:
 
@@ -171,13 +199,13 @@ The experiments demonstrate the trade-off between image quality, compression, an
 
 As the number of clusters increases:
 
-* The reconstructed image generally preserves more colors.
-* MSE decreases.
-* PSNR increases.
-* K-Means inertia decreases.
-* The theoretical compression ratio decreases.
-* Runtime increases.
-* Memory usage increases.
+- The reconstructed image generally preserves more colors.
+- MSE decreases.
+- PSNR increases.
+- K-Means inertia decreases.
+- The theoretical compression ratio decreases.
+- Runtime increases.
+- Memory usage increases.
 
 Therefore, increasing `K` improves image quality but comes at the cost of computational resources and reduced compression.
 
@@ -210,10 +238,11 @@ The generated visualization is stored in the `data/output/` directory.
 
 The project requires Python and the following packages:
 
-* NumPy
-* Pandas
-* Matplotlib
-* Pillow
+- NumPy
+- Pandas
+- Matplotlib
+- Pillow
+- Streamlit
 
 Install them using:
 
@@ -255,11 +284,11 @@ This project focuses on color quantization using K-Means rather than a complete 
 
 Some limitations include:
 
-* K-Means can become computationally expensive as the number of pixels and clusters increases.
-* The result can depend on the random initialization of centroids.
-* The compression ratio is a theoretical representation-based estimate rather than a direct comparison of PNG or JPEG file sizes.
-* Spatial relationships between neighboring pixels are not explicitly considered.
-* The current implementation is primarily demonstrated using a single input image.
+- K-Means can become computationally expensive as the number of pixels and clusters increases.
+- The result can depend on the random initialization of centroids.
+- The compression ratio is a theoretical representation-based estimate rather than a direct comparison of PNG or JPEG file sizes.
+- Spatial relationships between neighboring pixels are not explicitly considered.
+- The current implementation is primarily demonstrated using a single input image.
 
 ---
 
@@ -267,14 +296,14 @@ Some limitations include:
 
 Possible future improvements include:
 
-* PCA-based dimensionality reduction.
-* More efficient distance calculations.
-* Improved centroid initialization.
-* Testing on multiple images.
-* Comparison with other image compression techniques.
-* More detailed performance profiling.
-* Investigation of alternative color spaces.
-* Improved storage/encoding of the compressed representation.
+- PCA-based dimensionality reduction.
+- More efficient distance calculations.
+- Improved centroid initialization.
+- Testing on multiple images.
+- Comparison with other image compression techniques.
+- More detailed performance profiling.
+- Investigation of alternative color spaces.
+- Improved storage/encoding of the compressed representation.
 
 ---
 
