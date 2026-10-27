@@ -68,6 +68,15 @@ st.markdown(f"""
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
         margin-bottom: 20px;
     }}
+    .app-footer {{
+        color: {text_color} !important;
+        text-align: right;
+        margin-top: 2rem;
+        padding: 0.75rem 0;
+    }}
+    .app-footer span {{
+        color: #e11d48 !important;
+    }}
     /* Force file uploader text and button text to black */
     [data-testid="stFileUploaderDropzone"] div, 
     [data-testid="stFileUploaderDropzone"] span, 
@@ -227,3 +236,8 @@ elif app_mode == "Exploratory Experiment Results":
                 st.warning(f"Plot missing: {filename}")
     else:
         st.info(f"No experiment results CSV found at `{csv_path}`. Run `main.py` locally to generate them.")
+
+st.markdown(
+    f'<div class="app-footer">Made by Rajdip <span>❤️❤️</span></div>',
+    unsafe_allow_html=True,
+)
