@@ -14,7 +14,7 @@ The K-Means algorithm is implemented **from scratch using NumPy** rather than us
 
 ## Web Application Showcase (Streamlit)
 
-In addition to the script-based workflow, this project now includes an interactive **Streamlit Web Application** to showcase the compression live! 
+In addition to the script-based workflow, this project now includes an interactive **Streamlit Web Application** to showcase the compression live! [Link of Live App](https://image-compression-using-kmeans-by-raj.streamlit.app/)
 
 ### Features of the Web App:
 - **Interactive K-Means Compressor:** Upload any custom image (JPG/PNG) or use the default sample image (`bird.png`), select your preferred cluster size ($K$), and watch the compression happen live.
