@@ -6,11 +6,12 @@ import pandas as pd
 from pathlib import Path
 import sys
 import io
+import tempfile
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 sys.path.append(str(ROOT_DIR))
 
-from src.image_utils import prepare, compress_image, image_loading
+from src.image_utils import prepare, compress_image
 from src.metrics import mse, PSNR, compression_ratio, inertia
 
 st.set_page_config(
@@ -108,11 +109,14 @@ if app_mode == "Live Compression App":
         
         original_pil = None
         img_path = None
+        uploaded_file = None
+        original_file_size_kb = None
         
         if run_default:
             if default_path.exists():
                 original_pil = Image.open(default_path).convert('RGB')
                 img_path = default_path
+                original_file_size_kb = default_path.stat().st_size / 1024
                 st.image(original_pil, caption="Default Image (bird.png)", width='stretch')
             else:
                 st.warning(f"Default image not found at: {default_path}")
@@ -120,10 +124,7 @@ if app_mode == "Live Compression App":
             uploaded_file = st.file_uploader("Upload an image (JPG/PNG)", type=["jpg", "png", "jpeg"])
             if uploaded_file is not None:
                 original_pil = Image.open(uploaded_file).convert('RGB')
-                temp_path = ROOT_DIR / "data" / "input" / "temp_uploaded.png"
-                temp_path.parent.mkdir(parents=True, exist_ok=True)
-                original_pil.save(temp_path)
-                img_path = temp_path
+                original_file_size_kb = uploaded_file.size / 1024
                 st.image(original_pil, caption="Uploaded Image", width='stretch')
             else:
                 st.info("Please upload an image file to proceed.")
@@ -138,38 +139,58 @@ if app_mode == "Live Compression App":
         run_btn = st.button("🚀 Run K-Means Compression", type="primary", use_container_width=True)
 
     if run_btn:
-        if original_pil is not None and img_path is not None:
+        if original_pil is not None and (img_path is not None or uploaded_file is not None):
             with st.spinner("Crunching pixels and running K-Means clustering..."):
-                # Get original file size in KB
-                original_file_size_kb = img_path.stat().st_size / 1024
-                
-                # Load array and compress
-                old_img_arr = image_loading(img_path)
-                assignments, centroids, reconstructed = compress_image(
-                    img_path, k_clusters, max_iter, tolerance, seed=int(seed_val)
-                )
-                
-                # Metrics
-                comp_ratio = compression_ratio(reconstructed, old_img_arr, centroids)
-                psnr_val = PSNR(reconstructed, old_img_arr)
-                mse_val = mse(reconstructed, old_img_arr)
-                
-                # Generate compressed PIL image for preview & download
-                reconstructed_pil = Image.fromarray((reconstructed * 255.0).astype(np.uint8))
-                
-                # Convert compressed image to bytes for file size measurement & downloading
-                buf = io.BytesIO()
-                reconstructed_pil.save(buf, format="JPEG", quality=90)
-                compressed_bytes = buf.getvalue()
-                compressed_size_kb = len(compressed_bytes) / 1024
-                
-                # Calculate size savings percentage
-                savings_pct = ((original_file_size_kb - compressed_size_kb) / original_file_size_kb) * 100
+                temp_path = None
+                try:
+                    if uploaded_file is not None:
+                        with tempfile.NamedTemporaryFile(
+                            suffix=Path(uploaded_file.name).suffix, delete=False
+                        ) as temp_file:
+                            temp_path = Path(temp_file.name)
+                            temp_file.write(uploaded_file.getvalue())
+                        processing_path = temp_path
+                    else:
+                        processing_path = img_path
+
+                    assignments, centroids, reconstructed = compress_image(
+                        processing_path, k_clusters, max_iter, tolerance, seed=int(seed_val)
+                    )
+
+                    old_uint8 = np.array(original_pil.convert("RGB"))
+                    comp_ratio = compression_ratio(reconstructed, old_uint8, centroids)
+                    psnr_val = PSNR(reconstructed, old_uint8)
+                    mse_val = mse(reconstructed, old_uint8)
+
+                    reconstructed_pil = Image.fromarray(
+                        np.round(reconstructed * 255.0).astype(np.uint8)
+                    )
+
+                    palette = np.clip(np.round(centroids * 255), 0, 255).astype(np.uint8)
+                    height, width = reconstructed.shape[:2]
+                    idx_img = Image.fromarray(
+                        assignments.reshape(height, width).astype(np.uint8), mode="P"
+                    )
+                    idx_img.putpalette(palette.flatten().tolist())
+
+                    buf = io.BytesIO()
+                    idx_img.save(buf, format="PNG", optimize=True)
+                    compressed_bytes = buf.getvalue()
+                    compressed_size_kb = len(compressed_bytes) / 1024
+                    savings_pct = (
+                        (original_file_size_kb - compressed_size_kb)
+                        / original_file_size_kb
+                        * 100
+                    )
+                finally:
+                    if temp_path is not None and temp_path.exists():
+                        temp_path.unlink()
                 
             st.success("Compression Complete!")
             
             st.markdown("---")
             st.subheader("3. Results & File Size Comparison")
+            st.caption("Original file vs K-color palette PNG")
             
             res_col1, res_col2 = st.columns(2)
             with res_col1:
@@ -187,19 +208,26 @@ if app_mode == "Live Compression App":
                     st.text(f"Compressed Size: {compressed_size_kb:.2f} KB")
             
             # Simple metrics row for naive users
-            m1, m2, m3, m4 = st.columns(4)
-            m1.metric("File Size Reduction", f"{savings_pct:.1f}% smaller")
-            m2.metric("PSNR Quality", f"{psnr_val:.2f} dB")
-            m3.metric("Math Error (MSE)", f"{mse_val:.5f}")
-            m4.metric("Color Palette", f"{k_clusters} Colors")
+            m1, m2, m3, m4, m5 = st.columns(5)
+            size_change_label = (
+                f"{abs(savings_pct):.1f}% larger"
+                if savings_pct < 0
+                else f"{savings_pct:.1f}% smaller"
+            )
+            m1.metric("File Size Reduction", size_change_label)
+            m2.metric("PSNR", f"{psnr_val:.2f} dB")
+            m3.metric("MSE", f"{mse_val:.5f}")
+            m4.metric("Theoretical Ratio", f"{comp_ratio:.2f}x")
+            m4.caption("index + palette bits vs raw 24-bit RGB")
+            m5.metric("Color Palette", f"{k_clusters} Colors")
             
             # Download Button
             st.markdown("### 📥 Download Your Compressed Image")
             st.download_button(
-                label="Download Compressed Image (JPEG)",
+                label="Download Compressed Image (PNG)",
                 data=compressed_bytes,
-                file_name=f"compressed_image_K{k_clusters}.jpg",
-                mime="image/jpeg",
+                file_name=f"compressed_image_K{k_clusters}.png",
+                mime="image/png",
                 use_container_width=True
             )
         else:
